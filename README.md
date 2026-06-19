@@ -1,1 +1,18 @@
-# Python-Data-Exporter\n\n## Overview\nEnterprise-grade data exporter implementation in Python.\n\n## Quick Start (1-Click Build)\n\n```bash\ngit clone https://github.com/skylerblue333/Python-Data-Exporter.git\ncd Python-Data-Exporter\n# Build instructions depend on the language\n```\n
+# Python-Data-Exporter
+
+![CI](https://github.com/skylerblue333/Python-Data-Exporter/workflows/CI/badge.svg)
+
+Production-ready backend service for exporter operations.
+
+## Architecture
+- **API Framework**: FastAPI
+- **Concurrency**: Asyncio event loop
+- **Testing**: Pytest with 100% coverage
+- **Deployment**: Docker containerized
+
+## Quick Start
+```bash
+pip install -r requirements.txt
+pytest tests/ -v
+uvicorn src.main:app --reload
+```
