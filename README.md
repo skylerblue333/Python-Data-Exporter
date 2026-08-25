@@ -1,44 +1,60 @@
-<!-- PORTFOLIO PROJECT PROFILE: maintained by the repository owner -->
+# Sky Data Exporter
 
-## Project profile and code-audit snapshot
+**Status: engineering beta.** A bounded, read-only SQLite query exporter for producing local JSON and CSV artifacts.
 
-**What this is:** **Python-Data-Exporter** is a public repository described as: “Enterprise-grade data exporter implementation in Python. #SkyCoin4444 #AI #Blockchain #DevOps #Innovation” Its dominant language signals are **Python (5 files)**.
+## Implemented behavior
 
-**Why it has value:** Its value is best understood through the implementation evidence currently present in the repository: **19 tracked files** were observed in the shallow audit, with the source structure and existing documentation providing the project’s specific context. This README does not treat a prototype, experiment, or archive as a production system without supporting evidence.
+- opens SQLite databases in read-only URI mode and enables `PRAGMA query_only`
+- accepts a single `SELECT` or `WITH` statement only
+- supports parameterized query values through the Python library API
+- caps database size at 512 MiB, query length at 20,000 characters, result width at 200 columns, and rows at 100,000
+- writes JSON and CSV through an atomic temporary-file replacement
+- refuses to overwrite an existing destination unless explicitly requested
+- CLI emits machine-readable JSON results/errors
+- deterministic tests cover parameterized reads, JSON/CSV output, write-query rejection, multi-statement rejection, row caps, overwrite controls, and CLI execution
+- CI verifies compile, Ruff, pytest, dependency audit, CLI smoke behavior, Docker packaging, and non-root execution
 
-**Implementation evidence:** 2 test-related file(s) detected; 2 dependency or package manifest(s) detected; 2 build/CI/infrastructure signal(s) detected; and 3 documentation or governance file(s) detected. Test filenames observed include `tests/test_exporter.py`, `tests/test_main.py`. Dependency or package files include `package.json`, `requirements.txt`. Build, CI, or infrastructure signals include `Dockerfile`, `.github/workflows/ci.yml`.
+## Library example
 
-**Current status:** The repository is tracked on the `main` branch. The existing source tree, configuration, tests, workflows, and documentation remain authoritative for supported behavior and maturity. A code audit is not a production-readiness certification, and the presence of a test or workflow file does not establish that all checks pass.
+```python
+from src.exporter import DataExporter
 
-**Relationship to the wider portfolio:** This repository is one focused component of the broader Skyler Blue Spillers portfolio across AI, software engineering, cloud and DevOps, cybersecurity, blockchain, finance, education, social systems, and creative work. It may provide a service boundary, implementation pattern, experiment, archive, or reusable idea for related repositories. Treat repositories as technical dependencies only where documented interfaces and verified project requirements support that relationship.
+exporter = DataExporter("analytics.db", max_rows=5000)
+exporter.to_json(
+    "SELECT id, name FROM users WHERE active = ? ORDER BY id",
+    "users.json",
+    [1],
+)
+```
 
-**Quality and security note:** No obvious secret-like pattern was detected by the limited static scan; this is not a substitute for a security audit. No TODO/FIXME marker was detected in the scanned text files.
+## CLI
 
----
+```bash
+python main.py json analytics.db users.json \
+  'SELECT id, name FROM users ORDER BY id'
 
-# Python Data Exporter
+python main.py csv analytics.db users.csv \
+  'SELECT id, name FROM users ORDER BY id'
+```
 
-![GitHub stars](https://img.shields.io/github/stars/skylerblue333/Python-Data-Exporter?style=flat-square)
-![GitHub license](https://img.shields.io/github/license/skylerblue333/Python-Data-Exporter?style=flat-square)
+Use `--force` only when replacing an existing output is intentional.
 
-## 🌟 Overview
-**Python-Data-Exporter** is a professional-grade project within the **SkyCoin4444** ecosystem. It focuses on delivering high-value solutions in the domain of **Python**.
+## Container
 
-## 🚀 Key Features
-- **Scalable Architecture**: Designed for enterprise-level growth and performance.
-- **Modern Standards**: Implements best practices for clean code and maintainability.
-- **Robust Integration**: Built to work seamlessly within modern cloud-native environments.
+```bash
+docker build -t sky-data-exporter .
+docker run --rm -v "$PWD:/data" sky-data-exporter \
+  json /data/analytics.db /data/users.json 'SELECT * FROM users'
+```
 
-## 🛠️ Technology Stack
-- **Primary Domain**: Python
-- **Ecosystem**: SkyCoin4444 Digital Platform
+The image runs as an unprivileged UID and has no web server.
 
-## 📂 Structure
-The project is organized into a modular structure to ensure clarity and ease of development.
+## SKYCOIN4444 integration
 
-## 👨‍💻 Author
-**Skyler Blue Spillers**
-*Professional Chess Player & Software Engineer*
+This product can provide controlled report/export boundaries for local SQLite-backed development tools, analytics jobs, migrations, or test fixtures. Production systems using PostgreSQL, MySQL, warehouses, object stores, or regulated data should use dedicated read-only adapters and authorization controls rather than routing those databases through SQLite.
 
----
-*Powered by SkyCoin4444*
+## Explicit limitations
+
+This is not a database administration tool, SQL proxy, BI platform, warehouse connector, backup system, streaming exporter, or distributed reporting service. It does not authenticate users, authorize table/column access, redact sensitive fields, encrypt output, schedule jobs, upload artifacts, or prove production deployment. Read-only SQL prevents writes through this connection but does not decide whether a caller is entitled to read the selected data.
+
+See `SECURITY.md` and `CHANGELOG.md` for boundaries and productization history.

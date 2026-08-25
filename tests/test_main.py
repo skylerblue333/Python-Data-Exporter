@@ -1,17 +1,29 @@
-from fastapi.testclient import TestClient
-from src.main import app
+import json
+import sqlite3
+import subprocess
+import sys
 
-def test_health():
-    with TestClient(app) as client:
-        response = client.get("/health")
-        assert response.status_code == 200
-        assert response.json()["status"] == "ok"
-        assert response.json()["ready"] == True
 
-def test_process():
-    with TestClient(app) as client:
-        response = client.post("/api/v1/process", json={"test": "data"})
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "success"
-        assert data["domain"] == "exporter"
+def test_cli_exports_json(tmp_path) -> None:
+    database = tmp_path / "records.db"
+    output = tmp_path / "records.json"
+    with sqlite3.connect(database) as connection:
+        connection.execute("CREATE TABLE records (id INTEGER, value TEXT)")
+        connection.executemany("INSERT INTO records VALUES (?, ?)", [(1, "a"), (2, "b")])
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "main.py",
+            "json",
+            str(database),
+            str(output),
+            "SELECT * FROM records ORDER BY id",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert json.loads(result.stdout)["rows"] == 2
+    assert json.loads(output.read_text(encoding="utf-8"))[1]["value"] == "b"
