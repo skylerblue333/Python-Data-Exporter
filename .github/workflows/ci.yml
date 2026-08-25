@@ -26,7 +26,7 @@ jobs:
       - name: Lint
         run: ruff check main.py src tests
       - name: Tests
-        run: pytest -q
+        run: python -m pytest -q
       - name: Audit runtime dependencies
         run: pip-audit -r requirements.txt
       - name: CLI help smoke test
