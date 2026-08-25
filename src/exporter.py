@@ -5,8 +5,9 @@ import json
 import os
 import sqlite3
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 MAX_DATABASE_BYTES = 512 * 1024 * 1024
 MAX_QUERY_CHARS = 20_000
